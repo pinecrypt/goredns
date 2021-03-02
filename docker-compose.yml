@@ -1,0 +1,9 @@
+version: '3.7'
+
+services:
+  goredns:
+    network_mode: host
+    build:
+      context: .
+    env_file: .env
+

@@ -1,0 +1,6 @@
+FROM golang:1.10
+WORKDIR $GOPATH/src/git.k-space.ee/pinecrypt/goredns
+COPY main.go .
+RUN go get -d -v ./...
+RUN go install -v ./...
+CMD ["goredns"]
