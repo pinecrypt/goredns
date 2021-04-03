@@ -1,0 +1,16 @@
+version: '3.7'
+
+networks:
+  zoo:
+    external: true
+
+services:
+  app:
+    networks:
+      zoo:
+        ipv4_address: 62.65.250.53
+    build:
+      context: .
+    env_file: .env
+    image: 172.20.40.1:5000/goredns
+

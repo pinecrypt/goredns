@@ -1,9 +1,13 @@
 version: '3.7'
 
 services:
-  goredns:
+  app:
+    restart: always
+    user: "65535:65534"
     network_mode: host
     build:
       context: .
     env_file: .env
-
+    environment:
+     - ATTRIBUTE_FQDN=dns.fqdn
+     - ATTRIBUTE_SAN=dns.san

@@ -1,0 +1,7 @@
+id: goredns
+
+version: 3.7
+
+goredns:
+    replica1.yml: 1
+    replica2.yml: 2
