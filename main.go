@@ -20,6 +20,8 @@ type InventoryItem struct {
 }
 
 var mongoUri string = os.Getenv("MONGO_URI")
+var databaseName string = os.Getenv("GOREDNS_DATABASE")
+var collectionName string = os.Getenv("GOREDNS_COLLECTION")
 
 func appendResults(etype string, name string, m *dns.Msg, cur *mongo.Cursor) int {
 	count := 0
@@ -97,7 +99,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	coll := client.Database("kspace_accounting").Collection("inventory")
+	coll := client.Database(databaseName).Collection(collectionName)
 	defer client.Disconnect(ctx)
 	dns.HandleFunc(".", wrapper(coll))
 	port := 53
