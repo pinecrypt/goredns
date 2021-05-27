@@ -13,20 +13,20 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
 )
 
-type InventoryItem struct {
+type Elem struct {
 	Ip []string
 }
 
 var mongoUri string = os.Getenv("MONGO_URI")
-var databaseName string = os.Getenv("GOREDNS_DATABASE")
 var collectionName string = os.Getenv("GOREDNS_COLLECTION")
 
 func appendResults(etype string, name string, m *dns.Msg, cur *mongo.Cursor) int {
 	count := 0
 	for cur.Next(context.TODO()) {
-		var elem InventoryItem
+		var elem Elem
 		err := cur.Decode(&elem)
 		if err != nil {
 			log.Fatal(err)
@@ -59,6 +59,7 @@ func query(tp string, name string, m *dns.Msg, coll *mongo.Collection) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	if appendResults(tp, name, m, cur) == 0 {
 		cur, err := coll.Find(context.TODO(), bson.M{"dns.san": name})
 		if err != nil {
@@ -89,6 +90,7 @@ func wrapper(coll *mongo.Collection) func(dns.ResponseWriter, *dns.Msg) {
 }
 
 func main() {
+	cs, err := connstring.ParseAndValidate(mongoUri)
 	client, err := mongo.NewClient(options.Client().ApplyURI(mongoUri))
 	if err != nil {
 		log.Fatal(err)
@@ -99,7 +101,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	coll := client.Database(databaseName).Collection(collectionName)
+	coll := client.Database(cs.Database).Collection(collectionName)
 	defer client.Disconnect(ctx)
 	dns.HandleFunc(".", wrapper(coll))
 	port := 53
