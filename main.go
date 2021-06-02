@@ -74,6 +74,7 @@ func wrapper(coll *mongo.Collection) func(dns.ResponseWriter, *dns.Msg) {
 		m := new(dns.Msg)
 		m.SetReply(r)
 		m.Compress = false
+		m.Authoritative = true
 		switch r.Opcode {
 		case dns.OpcodeQuery:
 			for _, q := range m.Question {
