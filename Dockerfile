@@ -2,6 +2,7 @@ FROM golang:1.16-alpine
 RUN apk add libcap git
 WORKDIR $GOPATH/src/git.k-space.ee/pinecrypt/goredns
 COPY go.mod .
+COPY go.sum .
 RUN go mod download
 COPY main.go .
 RUN go build -o goredns main.go
