@@ -5,15 +5,18 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 	"time"
+	"net/http"
 
 	"github.com/miekg/dns"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Elem struct {
@@ -65,12 +68,19 @@ func query(tp string, name string, m *dns.Msg, coll *mongo.Collection) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		appendResults(tp, name, m, cur)
+		if appendResults(tp, name, m, cur) == 0 {
+            counterNoResults.Inc()
+		} else {
+            counterAlternativeNames.Inc()
+        }
+	} else {
+	    counterExactMatches.Inc()
 	}
 }
 
 func wrapper(coll *mongo.Collection) func(dns.ResponseWriter, *dns.Msg) {
 	return func(w dns.ResponseWriter, r *dns.Msg) {
+		counterQueries.Inc()
 		m := new(dns.Msg)
 		m.SetReply(r)
 		m.Compress = false
@@ -90,6 +100,25 @@ func wrapper(coll *mongo.Collection) func(dns.ResponseWriter, *dns.Msg) {
 	}
 }
 
+var (
+	counterQueries = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "goredns_queries",
+		Help: "The total number of queries.",
+	})
+	counterNoResults = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "goredns_no_results",
+		Help: "The total number of queries that had no results.",
+	})
+	counterExactMatches = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "goredns_exact_matches",
+		Help: "The total number of queries that matched FQDN exactly.",
+	})
+	counterAlternativeNames = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "goredns_alternative_names",
+		Help: "The total number of queries that matched SAN record.",
+	})
+)
+
 func main() {
 	cs, err := connstring.ParseAndValidate(mongoUri)
 	client, err := mongo.NewClient(options.Client().ApplyURI(mongoUri))
@@ -105,9 +134,12 @@ func main() {
 	coll := client.Database(cs.Database).Collection(collectionName)
 	defer client.Disconnect(ctx)
 	dns.HandleFunc(".", wrapper(coll))
-	port := 53
-	server := &dns.Server{Addr: ":" + strconv.Itoa(port), Net: "udp"}
-	log.Printf("Starting at %d\n", port)
+	http.Handle("/metrics", promhttp.Handler())
+	server := &dns.Server{Addr: ":53", Net: "udp"}
+
+	go func() {
+	    http.ListenAndServe("127.0.0.1:9001", nil)
+	}()
 	err2 := server.ListenAndServe()
 	defer server.Shutdown()
 	if err2 != nil {
