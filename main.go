@@ -69,12 +69,12 @@ func query(tp string, name string, m *dns.Msg, coll *mongo.Collection) {
 			log.Fatal(err)
 		}
 		if appendResults(tp, name, m, cur) == 0 {
-            counterNoResults.Inc()
+			counterNoResults.Inc()
 		} else {
-            counterAlternativeNames.Inc()
-        }
+			counterAlternativeNames.Inc()
+		}
 	} else {
-	    counterExactMatches.Inc()
+		counterExactMatches.Inc()
 	}
 }
 
@@ -138,7 +138,7 @@ func main() {
 	server := &dns.Server{Addr: ":53", Net: "udp"}
 
 	go func() {
-	    http.ListenAndServe("127.0.0.1:9001", nil)
+		http.ListenAndServe("127.0.0.1:9001", nil)
 	}()
 	err2 := server.ListenAndServe()
 	defer server.Shutdown()
