@@ -58,13 +58,13 @@ func appendResults(etype string, name string, m *dns.Msg, cur *mongo.Cursor) int
 func query(tp string, name string, m *dns.Msg, coll *mongo.Collection) {
 	// TODO: Validate `name` against RE_FQDN
 	log.Printf("Query %s for %s\n", tp, name)
-	cur, err := coll.Find(context.TODO(), bson.M{"dns.fqdn": name})
+	cur, err := coll.Find(context.TODO(), bson.M{"dns.fqdn": name, "disabled": false})
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	if appendResults(tp, name, m, cur) == 0 {
-		cur, err := coll.Find(context.TODO(), bson.M{"dns.san": name})
+		cur, err := coll.Find(context.TODO(), bson.M{"dns.san": name, "disabled": false})
 		if err != nil {
 			log.Fatal(err)
 		}
