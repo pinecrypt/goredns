@@ -69,6 +69,7 @@ func query(tp string, name string, m *dns.Msg, coll *mongo.Collection) {
 			log.Fatal(err)
 		}
 		if appendResults(tp, name, m, cur) == 0 {
+			m.Rcode = dns.RcodeNameError
 			counterNoResults.Inc()
 		} else {
 			counterAlternativeNames.Inc()
